@@ -4,7 +4,7 @@ import (
   "log"
 
   "github.com/gofiber/fiber/v2"
-  "github.com/Hohyun/go-chunkeng/grade"
+  "github.com/Hohyun/go-chunkeng/internal/grade"
 )
 
 func setupRoutes(app *fiber.App) {
