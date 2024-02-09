@@ -44,7 +44,9 @@ func GetScores(c *fiber.Ctx) error {
 	defer db.Close()
 
 	queryString := `
-	select id, test_date, test_name, member_id, member_name, team, subject, teacher, err_cnt, ttl_cnt, chaewoom, reg_id, reg_date, mod_date, remarks
+	select id, test_date, test_name, member_id, member_name, 
+		team, subject, teacher, err_cnt, ttl_cnt, chaewoom, 
+		reg_id, reg_date, mod_date, remarks
 	from ceng_test_score
 	where t_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
 	order by t_date desc, team, test_name, member_name 
@@ -93,8 +95,10 @@ func NewScore(c *fiber.Ctx) error {
 	defer db.Close()
 
 	queryString := `
-	insert into ceng_test_score (test_date, test_name, member_id, member_name, team, subject, teacher, err_cnt, ttl_cnt, chaewoom, reg_id, reg_date, mod_date)
-	values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	insert into ceng_test_score (test_date, test_name, member_id, member_name, 
+		team, subject, teacher, err_cnt, ttl_cnt, chaewoom, 
+		reg_id, reg_date, mod_date, remarks)
+	values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	tx, err := db.Begin()
@@ -113,7 +117,7 @@ func NewScore(c *fiber.Ctx) error {
 		}
 		_, err = tx.Exec(queryString, s.TestDate, s.TestName, s.MemberID, s.MemberName,
 			s.Team, s.Subject, s.Teacher, s.ErrCnt, s.TtlCnt, chaewoom,
-			s.RegID, s.RegDate, s.ModDate)
+			s.RegID, s.RegDate, s.ModDate, s.Remarks)
 		checkError(err)
 
 		if err != nil {
