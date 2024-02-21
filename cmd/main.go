@@ -35,7 +35,7 @@ func main() {
 
 	setupRoutes(app)
 
-	log.Fatal(app.Listen(":3101"))
+	log.Fatal(app.Listen(":3011"))
 }
 
 func hello(c *fiber.Ctx) error {

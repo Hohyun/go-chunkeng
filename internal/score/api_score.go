@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/Hohyun/go-chunkeng/internal/util"
 	_ "github.com/go-sql-driver/mysql"
@@ -15,7 +14,7 @@ import (
 
 type Score struct {
 	ID         int64     `json:"id"`
-	TestDate   time.Time `json:"test_date"`
+	TestDate   string    `json:"test_date"`
 	TestName   string    `json:"test_name"`
 	MemberID   string    `json:"member_id"`
 	MemberName string    `json:"member_name"`
@@ -26,9 +25,9 @@ type Score struct {
 	TtlCnt     int64     `json:"ttl_cnt"`
 	Chaewoom   bool      `json:"chaewoom"`
 	RegID      string    `json:"reg_id"`
-	RegDate    time.Time `json:"reg_date"`
+	RegDate    string    `json:"reg_date"`
 	ModID      string    `json:"mod_id"`
-	ModDate    time.Time `json:"mod_date"`
+	ModDate    string    `json:"mod_date"`
 	Remarks    string    `json:"remarks"`
 }
 
@@ -44,14 +43,48 @@ func GetScores(c *fiber.Ctx) error {
 
 	defer db.Close()
 
+  team := c.Query("team", "")
+  subject := c.Query("subject", "")
+  teacher := c.Query("teacher", "")
+  testName := c.Query("testName", "")
+  fromDate := c.Query("fromDate", "")
+  toDate   := c.Query("toDate", "")
+  
+  cond := "" 
+  if team != "" {
+    cond = fmt.Sprintf(" and team = '%s'", team)
+  }
+  if subject != "" {
+    cond += fmt.Sprintf(" and subject = '%s'", subject)
+  }
+  if teacher != "" {
+    cond += fmt.Sprintf(" and teacher = '%s'", teacher)
+  }
+  if testName != "" {
+    cond += fmt.Sprintf(" and test_name = '%s'", testName)
+  }
+  if fromDate != "" {
+    cond += fmt.Sprintf(" and test_date >= '%s'", fromDate)
+  }
+  if toDate != "" {
+    cond += fmt.Sprintf(" and test_date <= '%s'", toDate)
+  }
+
+
 	queryString := `
-	select id, test_date, test_name, member_id, member_name, 
-		team, subject, teacher, err_cnt, ttl_cnt, chaewoom, 
-		reg_id, reg_date, mod_id, mod_date, remarks
-	from ceng_test_score
-	where test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
-	order by test_date desc, team, test_name, member_name 
-	`
+select id, DATE_FORMAT(test_date,"%Y-%m-%dT%T.000Z"), test_name, member_id, 
+  member_name, team, subject, teacher, err_cnt, ttl_cnt, chaewoom, reg_id, 
+  DATE_FORMAT(reg_date,"%Y-%m-%dT%T.000Z"), coalesce(mod_id, ""), 
+  coalesce(DATE_FORMAT(mod_date,"%Y-%m-%dT%T.000Z"), ""), remarks
+from ceng_test_score 
+where true`
+
+  if cond != "" {
+    queryString += cond
+  }
+  queryString += "\norder by test_date desc, team, test_name, member_name;"
+	// where test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
+  fmt.Println(queryString)
 
 	var rr []Score
 	var r Score
