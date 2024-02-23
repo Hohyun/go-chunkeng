@@ -11,9 +11,10 @@ import (
 )
 
 type ClassMember struct {
-	CmID    string `json:"id"`
-	CmName  string `json:"name"`
-	CmClass string `json:"class"`
+	MemberID    string `json:"member_id"`
+	MemberName  string `json:"member_name"`
+	ClassID     string `json:"class_id"`
+  ClassName   string `json:"class_name"`
 }
 
 func GetMembers(c *fiber.Ctx) error {
@@ -27,17 +28,17 @@ func GetMembers(c *fiber.Ctx) error {
 	defer db.Close()
 
 	queryString := `
-	select m_id, m_name, m_class
-	from ceng_member cm 
-	where c_idx = '1' and m_out = 'N' and m_level = '1' and m_class = ?
-	order by m_name 
+select m_id member_id, m_name member_name, m_class class_id, class_name
+from ceng_member cm join ceng_class_info cci on cm.m_class = cci.class_code 
+where c_idx = '1' and m_out = 'N' and m_level = '1' and m_class = ?
+order by m_name
 	`
 
 	var rr []ClassMember
 	var r ClassMember
 	rows, err := db.Query(queryString, class)
 	for rows.Next() {
-		err := rows.Scan(&r.CmID, &r.CmName, &r.CmClass)
+		err := rows.Scan(&r.MemberID, &r.MemberName, &r.ClassID, &r.ClassName)
 		if err != nil {
 			fmt.Printf("log.Logger: %v\n", err.Error())
 			return c.SendString(err.Error())

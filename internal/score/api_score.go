@@ -18,6 +18,8 @@ type Score struct {
 	TestName   string    `json:"test_name"`
 	MemberID   string    `json:"member_id"`
 	MemberName string    `json:"member_name"`
+	ClassID    string    `json:"class_id"`
+  ClassName  string    `json:"class_name"`
 	Team       string    `json:"team"`
 	Subject    string    `json:"subject"`
 	Teacher    string    `json:"teacher"`
@@ -73,7 +75,7 @@ func GetScores(c *fiber.Ctx) error {
 
 	queryString := `
 select id, DATE_FORMAT(test_date,"%Y-%m-%dT%T.000Z"), test_name, member_id, 
-  member_name, team, subject, teacher, err_cnt, ttl_cnt, chaewoom, reg_id, 
+  member_name, class_id, class_name, subject, teacher, err_cnt, ttl_cnt, chaewoom, reg_id, 
   DATE_FORMAT(reg_date,"%Y-%m-%dT%T.000Z"), coalesce(mod_id, ""), 
   coalesce(DATE_FORMAT(mod_date,"%Y-%m-%dT%T.000Z"), ""), remarks
 from ceng_test_score 
@@ -82,9 +84,9 @@ where true`
   if cond != "" {
     queryString += cond
   }
-  queryString += "\norder by test_date desc, team, test_name, member_name;"
+  queryString += "\norder by test_date desc, class_name, test_name, member_name;"
 	// where test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
-  fmt.Println(queryString)
+  // fmt.Println(queryString)
 
 	var rr []Score
 	var r Score
@@ -93,7 +95,7 @@ where true`
 
 	for rows.Next() {
 		err := rows.Scan(&r.ID, &r.TestDate, &r.TestName, &r.MemberID, &r.MemberName,
-			&r.Team, &r.Subject, &r.Teacher, &r.ErrCnt, &r.TtlCnt, &r.Chaewoom,
+			&r.ClassID, &r.ClassName, &r.Subject, &r.Teacher, &r.ErrCnt, &r.TtlCnt, &r.Chaewoom,
 			&r.RegID, &r.RegDate, &r.ModID, &r.ModDate, &r.Remarks)
 		if err != nil {
 			fmt.Printf("log.Logger: %v\n", err.Error())
@@ -122,8 +124,6 @@ func NewScore(c *fiber.Ctx) error {
 		fiberlog.Error(err)
 		return err
 	}
-
-	// log.Println(p)
 
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
