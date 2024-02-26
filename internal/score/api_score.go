@@ -174,7 +174,29 @@ func NewScore(c *fiber.Ctx) error {
 }
 
 func DeleteScore(c *fiber.Ctx) error {
-	return c.SendString("Delete score")
+	id := c.Params("id")
+
+	dsn := util.GetMysqlDsn()
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	queryString := `
+delete from ceng_test_score where id = ?
+	`
+  _, err = db.Exec(queryString, id)
+  if err != nil {
+    return c.JSON(fiber.Map{
+      "result":      "FAIL",
+      "description": err.Error(),
+    })
+  }
+  return c.JSON(fiber.Map{
+    "result":      "OK",
+    "description": fmt.Sprintf("Record %s deleted succefully", id),
+  })  
 }
 
 func checkError(err error) {
