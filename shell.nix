@@ -5,13 +5,15 @@ in
 
 pkgs.mkShellNoCC {
   packages = with pkgs; [
+    redis
     nodejs_20
     go
+    air
     cowsay
     lolcat
   ];
 
-  GREETING = "Hello, Chunk Go Server Project! (go_1.21, nodejs_20)";
+  GREETING = "Welcome to go(1.21), nodejs(20), redis develpment environment powered by Nix!";
 
   shellHook = ''
     echo $GREETING | cowsay | lolcat
