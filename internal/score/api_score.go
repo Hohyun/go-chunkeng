@@ -20,7 +20,6 @@ type Score struct {
 	MemberName string    `json:"member_name"`
 	ClassID    string    `json:"class_id"`
   ClassName  string    `json:"class_name"`
-	Team       string    `json:"team"`
 	Subject    string    `json:"subject"`
 	Teacher    string    `json:"teacher"`
 	ErrCnt     int64     `json:"err_cnt"`
@@ -54,7 +53,7 @@ func GetScores(c *fiber.Ctx) error {
   
   cond := "" 
   if team != "" {
-    cond = fmt.Sprintf(" and team = '%s'", team)
+    cond = fmt.Sprintf(" and class_id = '%s'", team)
   }
   if subject != "" {
     cond += fmt.Sprintf(" and subject = '%s'", subject)
@@ -71,7 +70,9 @@ func GetScores(c *fiber.Ctx) error {
   if toDate != "" {
     cond += fmt.Sprintf(" and test_date <= '%s'", toDate)
   }
-
+  if fromDate == "" && toDate == "" {
+    cond += " and test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)"
+  }
 
 	queryString := `
 select id, DATE_FORMAT(test_date,"%Y-%m-%dT%T.000Z"), test_name, member_id, 
@@ -131,11 +132,16 @@ func NewScore(c *fiber.Ctx) error {
 
 	defer db.Close()
 
-	queryString := `
+	queryString1 := `
 	insert into ceng_test_score (test_date, test_name, member_id, member_name, 
-		team, subject, teacher, err_cnt, ttl_cnt, chaewoom, 
+		class_id, class_name, subject, teacher, err_cnt, ttl_cnt, chaewoom, 
 		reg_id, reg_date, remarks)
-	values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	queryString2 := `
+	insert into ceng_chaewoom (score_id, homework, mod_date)
+	values (?, ?, ?)
 	`
 
 	tx, err := db.Begin()
@@ -152,9 +158,23 @@ func NewScore(c *fiber.Ctx) error {
 		} else {
 			chaewoom = false
 		}
-		_, err = tx.Exec(queryString, s.TestDate, s.TestName, s.MemberID, s.MemberName,
-			s.Team, s.Subject, s.Teacher, s.ErrCnt, s.TtlCnt, chaewoom,
+  
+    var member_id string
+    if s.MemberID == "" {
+      member_id = GetMember(s.ClassID, s.MemberName)
+    } else {
+      member_id = s.MemberID
+    }
+
+		_, err = tx.Exec(queryString1, s.TestDate, s.TestName, member_id, s.MemberName,
+			s.ClassID, s.ClassName, s.Subject, s.Teacher, s.ErrCnt, s.TtlCnt, chaewoom,
 			s.RegID, s.RegDate, s.Remarks)
+		checkError(err)
+
+    lastID, err := tx.LastInsertId()
+    checkError(err)
+
+		_, err = tx.Exec(queryString2, lastID, "", s.TestDate)
 		checkError(err)
 
 		if err != nil {
@@ -164,6 +184,7 @@ func NewScore(c *fiber.Ctx) error {
 			})
 		}
 	}
+
 	err = tx.Commit()
 	checkError(err)
 
