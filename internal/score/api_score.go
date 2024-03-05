@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/Hohyun/go-chunkeng/internal/util"
 	_ "github.com/go-sql-driver/mysql"
@@ -13,23 +12,23 @@ import (
 )
 
 type Score struct {
-	ID         int64     `json:"id"`
-	TestDate   string    `json:"test_date"`
-	TestName   string    `json:"test_name"`
-	MemberID   string    `json:"member_id"`
-	MemberName string    `json:"member_name"`
-	ClassID    string    `json:"class_id"`
-  ClassName  string    `json:"class_name"`
-	Subject    string    `json:"subject"`
-	Teacher    string    `json:"teacher"`
-	ErrCnt     int64     `json:"err_cnt"`
-	TtlCnt     int64     `json:"ttl_cnt"`
-	Chaewoom   bool      `json:"chaewoom"`
-	RegID      string    `json:"reg_id"`
-	RegDate    string    `json:"reg_date"`
-	ModID      string    `json:"mod_id"`
-	ModDate    string    `json:"mod_date"`
-	Remarks    string    `json:"remarks"`
+	ID         int64  `json:"id"`
+	TestDate   string `json:"test_date"`
+	TestName   string `json:"test_name"`
+	MemberID   string `json:"member_id"`
+	MemberName string `json:"member_name"`
+	ClassID    string `json:"class_id"`
+	ClassName  string `json:"class_name"`
+	Subject    string `json:"subject"`
+	Teacher    string `json:"teacher"`
+	ErrCnt     int64  `json:"err_cnt"`
+	TtlCnt     int64  `json:"ttl_cnt"`
+	Chaewoom   bool   `json:"chaewoom"`
+	RegID      string `json:"reg_id"`
+	RegDate    string `json:"reg_date"`
+	ModID      string `json:"mod_id"`
+	ModDate    string `json:"mod_date"`
+	Remarks    string `json:"remarks"`
 }
 
 type ScoreWithChaewoom struct {
@@ -44,35 +43,35 @@ func GetScores(c *fiber.Ctx) error {
 
 	defer db.Close()
 
-  team := c.Query("team", "")
-  subject := c.Query("subject", "")
-  teacher := c.Query("teacher", "")
-  testName := c.Query("testName", "")
-  fromDate := c.Query("fromDate", "")
-  toDate   := c.Query("toDate", "")
-  
-  cond := "" 
-  if team != "" {
-    cond = fmt.Sprintf(" and class_id = '%s'", team)
-  }
-  if subject != "" {
-    cond += fmt.Sprintf(" and subject = '%s'", subject)
-  }
-  if teacher != "" {
-    cond += fmt.Sprintf(" and teacher = '%s'", teacher)
-  }
-  if testName != "" {
-    cond += fmt.Sprintf(" and test_name = '%s'", testName)
-  }
-  if fromDate != "" {
-    cond += fmt.Sprintf(" and test_date >= '%s'", fromDate)
-  }
-  if toDate != "" {
-    cond += fmt.Sprintf(" and test_date <= '%s'", toDate)
-  }
-  if fromDate == "" && toDate == "" {
-    cond += " and test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)"
-  }
+	team := c.Query("team", "")
+	subject := c.Query("subject", "")
+	teacher := c.Query("teacher", "")
+	testName := c.Query("testName", "")
+	fromDate := c.Query("fromDate", "")
+	toDate := c.Query("toDate", "")
+
+	cond := ""
+	if team != "" {
+		cond = fmt.Sprintf(" and class_id = '%s'", team)
+	}
+	if subject != "" {
+		cond += fmt.Sprintf(" and subject = '%s'", subject)
+	}
+	if teacher != "" {
+		cond += fmt.Sprintf(" and teacher = '%s'", teacher)
+	}
+	if testName != "" {
+		cond += fmt.Sprintf(" and test_name = '%s'", testName)
+	}
+	if fromDate != "" {
+		cond += fmt.Sprintf(" and test_date >= '%s'", fromDate)
+	}
+	if toDate != "" {
+		cond += fmt.Sprintf(" and test_date <= '%s'", toDate)
+	}
+	if fromDate == "" && toDate == "" {
+		cond += " and test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)"
+	}
 
 	queryString := `
 select id, DATE_FORMAT(test_date,"%Y-%m-%dT%T.000Z"), test_name, member_id, 
@@ -82,12 +81,12 @@ select id, DATE_FORMAT(test_date,"%Y-%m-%dT%T.000Z"), test_name, member_id,
 from ceng_test_score 
 where true`
 
-  if cond != "" {
-    queryString += cond
-  }
-  queryString += "\norder by test_date desc, class_name, test_name, member_name;"
+	if cond != "" {
+		queryString += cond
+	}
+	queryString += "\norder by test_date desc, class_name, test_name, member_name;"
 	// where test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)
-  // fmt.Println(queryString)
+	// fmt.Println(queryString)
 
 	var rr []Score
 	var r Score
@@ -140,53 +139,52 @@ func NewScore(c *fiber.Ctx) error {
 	`
 
 	queryString2 := `
-	insert into ceng_chaewoom (score_id, homework, mod_date)
+	insert into ceng_test_chaewoom (score_id, homeworks, mod_date)
 	values (?, ?, ?)
 	`
 
 	tx, err := db.Begin()
-	if err != nil {
-		log.Panic(err)
-	}
+  checkError(err)
+
 	defer tx.Rollback()
 
 	var chaewoom bool
 	for _, s := range p.Scores {
 		cwCriteria := p.ChaewoomCriteria
-		if s.Chaewoom == true || s.ErrCnt >= cwCriteria {
+		if s.Chaewoom || s.ErrCnt >= cwCriteria {
 			chaewoom = true
 		} else {
 			chaewoom = false
 		}
-  
-    var member_id string
-    if s.MemberID == "" {
-      member_id = GetMember(s.ClassID, s.MemberName)
-    } else {
-      member_id = s.MemberID
-    }
 
-		_, err = tx.Exec(queryString1, s.TestDate, s.TestName, member_id, s.MemberName,
+		var member_id string
+		if s.MemberID == "" {
+			member_id = GetMember(s.ClassID, s.MemberName)
+		} else {
+			member_id = s.MemberID
+		}
+
+		result, err := tx.Exec(queryString1, s.TestDate, s.TestName, member_id, s.MemberName,
 			s.ClassID, s.ClassName, s.Subject, s.Teacher, s.ErrCnt, s.TtlCnt, chaewoom,
 			s.RegID, s.RegDate, s.Remarks)
 		checkError(err)
 
-    lastID, err := tx.LastInsertId()
-    checkError(err)
+		lastID, err := result.LastInsertId()
+		checkError(err)
 
 		_, err = tx.Exec(queryString2, lastID, "", s.TestDate)
 		checkError(err)
-
-		if err != nil {
-			return c.JSON(fiber.Map{
-				"result":      "FAIL",
-				"description": err.Error(),
-			})
-		}
 	}
 
 	err = tx.Commit()
 	checkError(err)
+
+  if (err != nil) {
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+  }
 
 	return c.JSON(fiber.Map{
 		"result":      "OK",
@@ -207,22 +205,21 @@ func DeleteScore(c *fiber.Ctx) error {
 	queryString := `
 delete from ceng_test_score where id = ?
 	`
-  _, err = db.Exec(queryString, id)
-  if err != nil {
-    return c.JSON(fiber.Map{
-      "result":      "FAIL",
-      "description": err.Error(),
-    })
-  }
-  return c.JSON(fiber.Map{
-    "result":      "OK",
-    "description": fmt.Sprintf("Record %s deleted succefully", id),
-  })  
+	_, err = db.Exec(queryString, id)
+	if err != nil {
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{
+		"result":      "OK",
+		"description": fmt.Sprintf("Record %s deleted succefully", id),
+	})
 }
 
 func checkError(err error) {
 	if err != nil {
-		// panic(err)
-		fiberlog.Warn("Error: ", err)
+    panic(err)
 	}
 }
