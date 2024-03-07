@@ -1,4 +1,3 @@
-
 package score
 
 import (
@@ -23,7 +22,7 @@ type Chaewoom struct {
 	MemberName string `json:"member_name"`
 	ErrCnt     int64  `json:"err_cnt"`
 	DueDate    string `json:"due_date"`
-  Homeworks  string `json:"homeworks"`
+	Homeworks  string `json:"homeworks"`
 	Done       bool   `json:"done"`
 	Remarks    string `json:"remarks"`
 	ModID      string `json:"mod_id"`
@@ -82,16 +81,16 @@ where true`
 	checkError(err)
 
 	for rows.Next() {
-		err := rows.Scan(&r.ID, &r.TestDate, &r.ClassID, &r.ClassName, 
-      &r.Subject, &r.TestName, &r.MemberID, &r.MemberName, &r.ErrCnt, 
-      &r.DueDate, &r.Homeworks, &r.Done, &r.Remarks, &r.ModID, &r.ModDate)
+		err := rows.Scan(&r.ID, &r.TestDate, &r.ClassID, &r.ClassName,
+			&r.Subject, &r.TestName, &r.MemberID, &r.MemberName, &r.ErrCnt,
+			&r.DueDate, &r.Homeworks, &r.Done, &r.Remarks, &r.ModID, &r.ModDate)
 
 		if err != nil {
-      fiberlog.Error(err.Error())
-	    return c.JSON(fiber.Map{
-		    "result":      "FAIL",
-		    "description": err.Error(),
-	    })
+			fiberlog.Error(err.Error())
+			return c.JSON(fiber.Map{
+				"result":      "FAIL",
+				"description": err.Error(),
+			})
 		}
 		rr = append(rr, r)
 	}
@@ -104,7 +103,6 @@ where true`
 	c.Set("Content-type", "application/json")
 	return c.Send(b)
 }
-
 
 func DeleteChaewoom(c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -132,3 +130,35 @@ delete from ceng_test_chaewoom where id = ?
 	})
 }
 
+func UpdateChaewoom(c *fiber.Ctx) error {
+	cw := new(Chaewoom)
+
+	if err := c.BodyParser(cw); err != nil {
+		fiberlog.Error(err)
+		return err
+	}
+
+	dsn := util.GetMysqlDsn()
+	db, err := sql.Open("mysql", dsn)
+	checkError(err)
+
+	defer db.Close()
+
+	queryString := `
+	update ceng_test_chaewoom 
+  set due_date = ?, homeworks = ?, done = ?, remarks = ?, mod_id = ?, mod_date = NOW() 
+  where id = ?
+	`
+	_, err = db.Exec(queryString, cw.DueDate, cw.Homeworks, cw.Done, cw.Remarks, cw.ModID, cw.ID)
+
+	if err != nil {
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
+	return c.JSON(fiber.Map{
+		"result":      "OK",
+		"description": fmt.Sprintf("Record (id: %d) updated succefully", cw.ID),
+	})
+}
