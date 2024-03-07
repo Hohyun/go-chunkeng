@@ -15,11 +15,12 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/api/score", score.GetScores)
 	app.Get("/api/score/:id", score.GetScore)
 	app.Post("/api/score", score.NewScore)
-  app.Delete("/api/score/:id", score.DeleteScore)
+	app.Put("/api/score/:id", score.UpdateScore)
+	app.Delete("/api/score/:id", score.DeleteScore)
 
 	app.Get("/api/chaewoom", score.GetChaewooms)
-	// app.Put("/api/chaewoom", score.UpdateChaewoom)
-  app.Delete("/api/chaewoom/:id", score.DeleteChaewoom)
+	app.Put("/api/chaewoom", score.UpdateChaewoom)
+	app.Delete("/api/chaewoom/:id", score.DeleteChaewoom)
 
 	app.Get("/api/class", score.GetClasses)
 	app.Get("/api/class/tree", score.GetClassesTree)

@@ -144,7 +144,7 @@ func NewScore(c *fiber.Ctx) error {
 	`
 
 	tx, err := db.Begin()
-  checkError(err)
+	checkError(err)
 
 	defer tx.Rollback()
 
@@ -179,12 +179,12 @@ func NewScore(c *fiber.Ctx) error {
 	err = tx.Commit()
 	checkError(err)
 
-  if (err != nil) {
+	if err != nil {
 		return c.JSON(fiber.Map{
 			"result":      "FAIL",
 			"description": err.Error(),
 		})
-  }
+	}
 
 	return c.JSON(fiber.Map{
 		"result":      "OK",
@@ -218,8 +218,79 @@ delete from ceng_test_score where id = ?
 	})
 }
 
+func UpdateScore(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	s := new(Score)
+
+	if err := c.BodyParser(s); err != nil {
+		fiberlog.Error(err)
+		return err
+	}
+
+	dsn := util.GetMysqlDsn()
+	db, err := sql.Open("mysql", dsn)
+	checkError(err)
+
+	defer db.Close()
+
+	queryString := `
+  update ceng_test_score 
+  set err_cnt = ?, chaewoom = ?, remarks = ?, mod_id = ?, mod_date = now()
+  where id = ?
+  `
+
+	tx, err := db.Begin()
+	checkError(err)
+
+	defer tx.Rollback()
+
+	_, err = tx.Exec(queryString, s.ErrCnt, s.Chaewoom, s.Remarks, s.ModID, id)
+	checkError(err)
+
+	chaewoomInsert := false
+	if s.Chaewoom {
+		queryString = `
+    	select * from ceng_test_chaewoom
+    	where score_id = ?
+    	`
+		rows, err := db.Query(queryString, id)
+		checkError(err)
+
+		// if rows is null, insert a new record
+		if !rows.Next() {
+			queryString = `
+		insert into ceng_test_chaewoom (score_id, homeworks, mod_date) 
+		values (?, ?, now())
+		`
+			_, err = tx.Exec(queryString, s.ID, "")
+			checkError(err)
+			chaewoomInsert = true
+		}
+	}
+	err = tx.Commit()
+	checkError(err)
+
+	if err != nil {
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
+
+	description := ""
+	if chaewoomInsert {
+		description = " + (a 채움장 record created)"
+	}
+
+	return c.JSON(fiber.Map{
+		"result":      "OK",
+		"description": fmt.Sprintf("A score record (id: %v) updated successfully", s.ID) + description,
+	})
+}
+
 func checkError(err error) {
 	if err != nil {
-    panic(err)
+		panic(err)
 	}
 }
