@@ -106,6 +106,7 @@ where true`
 
 func DeleteChaewoom(c *fiber.Ctx) error {
 	id := c.Params("id")
+  // workerId := c.Query("workerId", "")
 
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
@@ -132,6 +133,7 @@ delete from ceng_test_chaewoom where id = ?
 
 func UpdateChaewoom(c *fiber.Ctx) error {
 	cw := new(Chaewoom)
+  workerId := c.Query("workerId", "")
 
 	if err := c.BodyParser(cw); err != nil {
 		fiberlog.Error(err)
@@ -149,7 +151,7 @@ func UpdateChaewoom(c *fiber.Ctx) error {
   set due_date = ?, homeworks = ?, done = ?, remarks = ?, mod_id = ?, mod_date = NOW() 
   where id = ?
 	`
-	_, err = db.Exec(queryString, cw.DueDate, cw.Homeworks, cw.Done, cw.Remarks, cw.ModID, cw.ID)
+	_, err = db.Exec(queryString, cw.DueDate, cw.Homeworks, cw.Done, cw.Remarks, workerId, cw.ID)
 
 	if err != nil {
 		return c.JSON(fiber.Map{

@@ -119,6 +119,7 @@ func GetScore(c *fiber.Ctx) error {
 
 func NewScore(c *fiber.Ctx) error {
 	p := new(ScoreWithChaewoom)
+  workerId := c.Query("workerId", "")
 
 	if err := c.BodyParser(p); err != nil {
 		fiberlog.Error(err)
@@ -166,7 +167,7 @@ func NewScore(c *fiber.Ctx) error {
 
 		result, err := tx.Exec(queryString1, s.TestDate, s.TestName, member_id, s.MemberName,
 			s.ClassID, s.ClassName, s.Subject, s.Teacher, s.ErrCnt, s.TtlCnt, chaewoom,
-			s.RegID, s.RegDate, s.Remarks)
+			workerId, s.RegDate, s.Remarks)
 		checkError(err)
 
 		lastID, err := result.LastInsertId()
@@ -194,6 +195,7 @@ func NewScore(c *fiber.Ctx) error {
 
 func DeleteScore(c *fiber.Ctx) error {
 	id := c.Params("id")
+  // workerId := c.Query("workerId", "")
 
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
@@ -220,6 +222,7 @@ delete from ceng_test_score where id = ?
 
 func UpdateScore(c *fiber.Ctx) error {
 	id := c.Params("id")
+	workerId := c.Query("workerId", "")
 
 	s := new(Score)
 
@@ -245,7 +248,7 @@ func UpdateScore(c *fiber.Ctx) error {
 
 	defer tx.Rollback()
 
-	_, err = tx.Exec(queryString, s.ErrCnt, s.Chaewoom, s.Remarks, s.ModID, id)
+	_, err = tx.Exec(queryString, s.ErrCnt, s.Chaewoom, s.Remarks, workerId, id)
 	checkError(err)
 
 	chaewoomInsert := false
