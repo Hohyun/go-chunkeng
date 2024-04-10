@@ -1,0 +1,6 @@
+.air.toml
+.git
+.gitignore
+shell.nix
+tmp/
+main
