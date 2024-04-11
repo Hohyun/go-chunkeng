@@ -7,6 +7,7 @@ pkgs.mkShellNoCC {
   packages = with pkgs; [
     go
     air
+    kompose
     cowsay
     lolcat
   ];
