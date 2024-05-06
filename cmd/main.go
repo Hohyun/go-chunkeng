@@ -27,6 +27,8 @@ func setupRoutes(app *fiber.App) {
 	// app.Get("/api/class-treedata", score.GetClassesTreeData)
 
 	app.Get("/api/member/:class", score.GetMembers)
+
+	app.Get("/api/framework", score.GetFramework)
 }
 
 func main() {
