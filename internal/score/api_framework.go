@@ -37,6 +37,10 @@ where keystr in ('tests', 'teachers', 'subjects', 'chaewoom:homeworks')
 	var keystr string
 	var value string
 	rows, err := db.Query(queryString)
+	if err != nil {
+		fmt.Printf("log.Logger: %v\n", err.Error())
+		return c.SendString(err.Error())
+	}
 	for rows.Next() {
 		err := rows.Scan(&keystr, &value)
 		if err != nil {
