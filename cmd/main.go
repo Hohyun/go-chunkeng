@@ -5,6 +5,7 @@ import (
 
 	"github.com/Hohyun/go-chunkeng/internal/score"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/template/html/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
@@ -24,6 +25,8 @@ func setupRoutes(app *fiber.App) {
 
 	app.Get("/api/class", score.GetClasses)
 	app.Get("/api/class/tree", score.GetClassesTree)
+	app.Get("/api/class/groups", score.GetClassGroups)
+	app.Get("/api/class/teams/:group_id", score.GetClassTeams)
 	// app.Get("/api/class-treedata", score.GetClassesTreeData)
 
 	app.Get("/api/member/:class", score.GetMembers)
@@ -37,7 +40,13 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	app := fiber.New()
+	// Initialize standard Go html template engine
+	engine := html.New("./views", ".html")
+
+	app := fiber.New(fiber.Config{
+		Views: engine,
+	})
+
 	app.Use(cors.New())
 
 	setupRoutes(app)
@@ -46,5 +55,9 @@ func main() {
 }
 
 func hello(c *fiber.Ctx) error {
-	return c.SendString("Hello World 👋! This is great. Isn't it?")
+	// return c.SendString("Hello World 👋! This is great. Isn't it?")
+	return c.Render("index", fiber.Map{
+		"Title": "Hello, World!",
+		"Content": "Hello World 👋! This is great. Isn't it?",
+	})
 }

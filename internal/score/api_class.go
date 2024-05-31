@@ -45,7 +45,49 @@ func GetClasses(c *fiber.Ctx) error {
 	return c.Send(b)
 }
 
+func GetClassGroups(c *fiber.Ctx) error {
+	data := GetClassesTreeData()
+
+	// return c.SendString("Hello World 👋! This is great. Isn't it?")
+	return c.Render("class_groups", fiber.Map{
+		"Title": "Select Group",
+		"Groups": data,
+	})
+}
+
+
+func GetClassTeams(c *fiber.Ctx) error {
+	group_id := c.Params("group_id")
+
+	data := GetClassesTreeData()
+
+	var teams []ClassTreeC
+	for i := range data {
+		if data[i].ID == group_id {
+			teams = data[i].Children 
+		}
+	}
+
+	// return c.SendString("Hello World 👋! This is great. Isn't it?")
+	return c.Render("class_teams", fiber.Map{
+		"Title": "Select Team",
+		"Teams": teams,
+	})
+}
+
 func GetClassesTree(c *fiber.Ctx) error {
+	pp := GetClassesTreeData()
+
+	b, err := json.Marshal(pp)
+	if err != nil {
+		fmt.Printf("log.Logger: %v\n", err.Error())
+	}
+
+	c.Set("Content-type", "application/json")
+	return c.Send(b)
+}
+
+func GetClassesTreeData() []ClassTreeP {
 	classes := getClassesInfo()
 
 	var pp []ClassTreeP
@@ -64,13 +106,7 @@ func GetClassesTree(c *fiber.Ctx) error {
 		pp[i].Children = cc
 	}
 
-	b, err := json.Marshal(pp)
-	if err != nil {
-		fmt.Printf("log.Logger: %v\n", err.Error())
-	}
-
-	c.Set("Content-type", "application/json")
-	return c.Send(b)
+	return pp
 }
 
 func parentExist(item ClassInfo, array []ClassTreeP) bool {
