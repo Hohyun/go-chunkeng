@@ -39,7 +39,13 @@ type ScoreWithChaewoom struct {
 func GetScores(c *fiber.Ctx) error {
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	defer db.Close()
 
@@ -91,7 +97,13 @@ where true`
 	var rr []Score
 	var r Score
 	rows, err := db.Query(queryString)
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	for rows.Next() {
 		err := rows.Scan(&r.ID, &r.TestDate, &r.TestName, &r.MemberID, &r.MemberName,
@@ -128,8 +140,14 @@ func NewScore(c *fiber.Ctx) error {
 
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
-	checkError(err)
-
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
+	
 	defer db.Close()
 
 	queryString1 := `
@@ -145,7 +163,13 @@ func NewScore(c *fiber.Ctx) error {
 	`
 
 	tx, err := db.Begin()
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	defer tx.Rollback()
 
@@ -168,18 +192,44 @@ func NewScore(c *fiber.Ctx) error {
 		result, err := tx.Exec(queryString1, s.TestDate, s.TestName, member_id, s.MemberName,
 			s.ClassID, s.ClassName, s.Subject, s.Teacher, s.ErrCnt, s.TtlCnt, chaewoom,
 			workerId, s.RegDate, s.Remarks)
-		checkError(err)
-
+	
+    if err != nil {
+		  fiberlog.Error(err)
+		  return c.JSON(fiber.Map{
+			  "result":      "FAIL",
+			  "description": err.Error(),
+		  })
+	  }
+		
 		lastID, err := result.LastInsertId()
-		checkError(err)
+		
+	  if err != nil {
+		  fiberlog.Error(err)
+		  return c.JSON(fiber.Map{
+			  "result":      "FAIL",
+			  "description": err.Error(),
+		  })
+	  }
 
 		_, err = tx.Exec(queryString2, lastID, "", s.TestDate)
-		checkError(err)
+	  if err != nil {
+		  fiberlog.Error(err)
+		  return c.JSON(fiber.Map{
+			  "result":      "FAIL",
+			  "description": err.Error(),
+		  })
+	  }
 	}
 
 	err = tx.Commit()
-	checkError(err)
-
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
+	
 	if err != nil {
 		return c.JSON(fiber.Map{
 			"result":      "FAIL",
@@ -200,8 +250,13 @@ func DeleteScore(c *fiber.Ctx) error {
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		panic(err)
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
 	}
+  
 	defer db.Close()
 
 	queryString := `
@@ -233,7 +288,13 @@ func UpdateScore(c *fiber.Ctx) error {
 
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	defer db.Close()
 
@@ -244,13 +305,25 @@ func UpdateScore(c *fiber.Ctx) error {
   `
 
 	tx, err := db.Begin()
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	defer tx.Rollback()
 
 	_, err = tx.Exec(queryString, s.ErrCnt, s.Chaewoom, s.Remarks, workerId, id)
-	checkError(err)
-
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
+	
 	chaewoomInsert := false
 	if s.Chaewoom {
 		queryString = `
@@ -258,7 +331,13 @@ func UpdateScore(c *fiber.Ctx) error {
     	where score_id = ?
     	`
 		rows, err := db.Query(queryString, id)
-		checkError(err)
+    if err != nil {
+		  fiberlog.Error(err)
+		  return c.JSON(fiber.Map{
+			  "result":      "FAIL",
+			  "description": err.Error(),
+		  })
+	  }
 
 		// if rows is null, insert a new record
 		if !rows.Next() {
@@ -267,20 +346,26 @@ func UpdateScore(c *fiber.Ctx) error {
 		values (?, ?, now())
 		`
 			_, err = tx.Exec(queryString, s.ID, "")
-			checkError(err)
+	    if err != nil {
+		    fiberlog.Error(err)
+		    return c.JSON(fiber.Map{
+			    "result":      "FAIL",
+			    "description": err.Error(),
+		    })
+	    }
+			
 			chaewoomInsert = true
 		}
 	}
 	err = tx.Commit()
-	checkError(err)
-
 	if err != nil {
+		fiberlog.Error(err)
 		return c.JSON(fiber.Map{
 			"result":      "FAIL",
 			"description": err.Error(),
 		})
 	}
-
+	
 	description := ""
 	if chaewoomInsert {
 		description = " + (a 채움장 record created)"
@@ -292,8 +377,3 @@ func UpdateScore(c *fiber.Ctx) error {
 	})
 }
 
-func checkError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}

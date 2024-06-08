@@ -32,7 +32,13 @@ type Chaewoom struct {
 func GetChaewooms(c *fiber.Ctx) error {
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	defer db.Close()
 
@@ -78,7 +84,13 @@ where true`
 	var rr []Chaewoom
 	var r Chaewoom
 	rows, err := db.Query(queryString)
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	for rows.Next() {
 		err := rows.Scan(&r.ID, &r.TestDate, &r.ClassID, &r.ClassName,
@@ -142,7 +154,13 @@ func UpdateChaewoom(c *fiber.Ctx) error {
 
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
-	checkError(err)
+	if err != nil {
+		fiberlog.Error(err)
+		return c.JSON(fiber.Map{
+			"result":      "FAIL",
+			"description": err.Error(),
+		})
+	}
 
 	defer db.Close()
 
