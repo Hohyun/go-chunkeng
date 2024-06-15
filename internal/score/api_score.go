@@ -211,14 +211,16 @@ func NewScore(c *fiber.Ctx) error {
 		  })
 	  }
 
-		_, err = tx.Exec(queryString2, lastID, "", s.TestDate)
-	  if err != nil {
-		  fiberlog.Error(err)
-		  return c.JSON(fiber.Map{
-			  "result":      "FAIL",
-			  "description": err.Error(),
-		  })
-	  }
+    if chaewoom {
+		  _, err = tx.Exec(queryString2, lastID, "", s.TestDate)
+	    if err != nil {
+		    fiberlog.Error(err)
+		    return c.JSON(fiber.Map{
+			    "result":      "FAIL",
+			    "description": err.Error(),
+		    })
+	    }
+    }
 	}
 
 	err = tx.Commit()
