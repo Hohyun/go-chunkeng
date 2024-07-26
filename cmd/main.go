@@ -21,6 +21,7 @@ func setupRoutes(app *fiber.App) {
 	app.Delete("/api/score/:id", score.DeleteScore)
 
 	app.Get("/api/chaewoom", score.GetChaewooms)
+	app.Post("/api/chaewoom", score.NewChaewoom)
 	app.Put("/api/chaewoom", score.UpdateChaewoom)
 	app.Delete("/api/chaewoom/:id", score.DeleteChaewoom)
 

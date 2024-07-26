@@ -131,7 +131,7 @@ func GetScore(c *fiber.Ctx) error {
 
 func NewScore(c *fiber.Ctx) error {
 	p := new(ScoreWithChaewoom)
-  workerId := c.Query("workerId", "")
+	workerId := c.Query("workerId", "")
 
 	if err := c.BodyParser(p); err != nil {
 		fiberlog.Error(err)
@@ -147,7 +147,7 @@ func NewScore(c *fiber.Ctx) error {
 			"description": err.Error(),
 		})
 	}
-	
+
 	defer db.Close()
 
 	queryString1 := `
@@ -158,8 +158,9 @@ func NewScore(c *fiber.Ctx) error {
 	`
 
 	queryString2 := `
-	insert into ceng_test_chaewoom (score_id, homeworks, mod_date)
-	values (?, ?, ?)
+	insert into ceng_test_chaewoom (test_date, class_id, class_name, subject, test_name, 
+    member_id, member_name, err_cnt, homeworks, score_id, mod_id, mod_date)
+	values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	tx, err := db.Begin()
@@ -192,35 +193,36 @@ func NewScore(c *fiber.Ctx) error {
 		result, err := tx.Exec(queryString1, s.TestDate, s.TestName, member_id, s.MemberName,
 			s.ClassID, s.ClassName, s.Subject, s.Teacher, s.ErrCnt, s.TtlCnt, chaewoom,
 			workerId, s.RegDate, s.Remarks)
-	
-    if err != nil {
-		  fiberlog.Error(err)
-		  return c.JSON(fiber.Map{
-			  "result":      "FAIL",
-			  "description": err.Error(),
-		  })
-	  }
-		
-		lastID, err := result.LastInsertId()
-		
-	  if err != nil {
-		  fiberlog.Error(err)
-		  return c.JSON(fiber.Map{
-			  "result":      "FAIL",
-			  "description": err.Error(),
-		  })
-	  }
 
-    if chaewoom {
-		  _, err = tx.Exec(queryString2, lastID, "", s.TestDate)
-	    if err != nil {
-		    fiberlog.Error(err)
-		    return c.JSON(fiber.Map{
-			    "result":      "FAIL",
-			    "description": err.Error(),
-		    })
-	    }
-    }
+		if err != nil {
+			fiberlog.Error(err)
+			return c.JSON(fiber.Map{
+				"result":      "FAIL",
+				"description": err.Error(),
+			})
+		}
+
+		lastID, err := result.LastInsertId()
+
+		if err != nil {
+			fiberlog.Error(err)
+			return c.JSON(fiber.Map{
+				"result":      "FAIL",
+				"description": err.Error(),
+			})
+		}
+
+		if chaewoom {
+			_, err = tx.Exec(queryString2, s.TestDate, s.ClassID, s.ClassName, s.Subject, s.TestName,
+				member_id, s.MemberName, s.ErrCnt, "", lastID, workerId, s.TestDate)
+			if err != nil {
+				fiberlog.Error(err)
+				return c.JSON(fiber.Map{
+					"result":      "FAIL",
+					"description": err.Error(),
+				})
+			}
+		}
 	}
 
 	err = tx.Commit()
@@ -231,7 +233,7 @@ func NewScore(c *fiber.Ctx) error {
 			"description": err.Error(),
 		})
 	}
-	
+
 	if err != nil {
 		return c.JSON(fiber.Map{
 			"result":      "FAIL",
@@ -247,7 +249,7 @@ func NewScore(c *fiber.Ctx) error {
 
 func DeleteScore(c *fiber.Ctx) error {
 	id := c.Params("id")
-  // workerId := c.Query("workerId", "")
+	// workerId := c.Query("workerId", "")
 
 	dsn := util.GetMysqlDsn()
 	db, err := sql.Open("mysql", dsn)
@@ -258,7 +260,7 @@ func DeleteScore(c *fiber.Ctx) error {
 			"description": err.Error(),
 		})
 	}
-  
+
 	defer db.Close()
 
 	queryString := `
@@ -325,7 +327,7 @@ func UpdateScore(c *fiber.Ctx) error {
 			"description": err.Error(),
 		})
 	}
-	
+
 	chaewoomInsert := false
 	if s.Chaewoom {
 		queryString = `
@@ -333,13 +335,13 @@ func UpdateScore(c *fiber.Ctx) error {
     	where score_id = ?
     	`
 		rows, err := db.Query(queryString, id)
-    if err != nil {
-		  fiberlog.Error(err)
-		  return c.JSON(fiber.Map{
-			  "result":      "FAIL",
-			  "description": err.Error(),
-		  })
-	  }
+		if err != nil {
+			fiberlog.Error(err)
+			return c.JSON(fiber.Map{
+				"result":      "FAIL",
+				"description": err.Error(),
+			})
+		}
 
 		// if rows is null, insert a new record
 		if !rows.Next() {
@@ -348,14 +350,14 @@ func UpdateScore(c *fiber.Ctx) error {
 		values (?, ?, now())
 		`
 			_, err = tx.Exec(queryString, s.ID, "")
-	    if err != nil {
-		    fiberlog.Error(err)
-		    return c.JSON(fiber.Map{
-			    "result":      "FAIL",
-			    "description": err.Error(),
-		    })
-	    }
-			
+			if err != nil {
+				fiberlog.Error(err)
+				return c.JSON(fiber.Map{
+					"result":      "FAIL",
+					"description": err.Error(),
+				})
+			}
+
 			chaewoomInsert = true
 		}
 	}
@@ -367,7 +369,7 @@ func UpdateScore(c *fiber.Ctx) error {
 			"description": err.Error(),
 		})
 	}
-	
+
 	description := ""
 	if chaewoomInsert {
 		description = " + (a 채움장 record created)"
@@ -378,4 +380,3 @@ func UpdateScore(c *fiber.Ctx) error {
 		"description": fmt.Sprintf("A score record (id: %v) updated successfully", s.ID) + description,
 	})
 }
-
