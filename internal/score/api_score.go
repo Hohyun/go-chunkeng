@@ -73,7 +73,7 @@ func GetScores(c *fiber.Ctx) error {
 		cond += fmt.Sprintf(" and test_date >= '%s'", fromDate)
 	}
 	if toDate != "" {
-		cond += fmt.Sprintf(" and test_date <= '%s'", toDate)
+		cond += fmt.Sprintf(" and DATE_SUB(test_date, INTERVAL 1 DAY) <= '%s'", toDate)
 	}
 	if fromDate == "" && toDate == "" {
 		cond += " and test_date > DATE_SUB(NOW(), INTERVAL 30 DAY)"
